@@ -60,8 +60,8 @@ export async function handleGenerateBrief(payload) {
       );
     }
 
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const model = process.env.OPENAI_SCRIPT_MODEL || "gpt-4.1";
+    const client = new OpenAI({ apiKey: envValue("OPENAI_API_KEY") });
+    const model = envValue("OPENAI_SCRIPT_MODEL") || "gpt-4.1";
     const completion = await client.responses.parse({
       model,
       input: [
@@ -118,10 +118,10 @@ export async function handleCreateVideo(payload) {
 
   try {
     const formData = new FormData();
-    formData.append("model", model || process.env.OPENAI_VIDEO_MODEL || "sora-2");
+    formData.append("model", model || envValue("OPENAI_VIDEO_MODEL") || "sora-2");
     formData.append("prompt", prompt);
-    formData.append("seconds", String(seconds || process.env.OPENAI_VIDEO_SECONDS || 8));
-    formData.append("size", size || process.env.OPENAI_VIDEO_SIZE || "720x1280");
+    formData.append("seconds", String(seconds || envValue("OPENAI_VIDEO_SECONDS") || 8));
+    formData.append("size", size || envValue("OPENAI_VIDEO_SIZE") || "720x1280");
 
     const videoJob = await openAIRequest("/videos", {
       method: "POST",
@@ -223,7 +223,17 @@ function productContextPrompt(productContext) {
 }
 
 function hasApiKey() {
-  return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(envValue("OPENAI_API_KEY"));
+}
+
+export function sanitizeEnvValue(value) {
+  return String(value || "")
+    .replace(/\uFEFF/g, "")
+    .trim();
+}
+
+function envValue(name) {
+  return sanitizeEnvValue(process.env[name]);
 }
 
 function jsonResult(status, body) {
@@ -241,7 +251,7 @@ async function openAIRequest(path, { expectBinary = false, ...init } = {}) {
     ...init,
     headers: {
       ...(init.headers || {}),
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+      Authorization: `Bearer ${envValue("OPENAI_API_KEY")}`
     }
   });
 
