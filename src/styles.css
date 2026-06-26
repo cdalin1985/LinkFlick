@@ -151,28 +151,28 @@ a {
 .hero {
   width: min(1220px, calc(100% - 44px));
   margin: 0 auto;
-  padding: 54px 0 34px;
+  padding: 24px 0 32px;
   text-align: center;
 }
 
 .hero-copy {
-  width: min(850px, 100%);
+  width: min(760px, 100%);
   margin: 0 auto;
 }
 
 .hero h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(3.2rem, 6vw, 5.75rem);
+  font-size: 3.35rem;
   font-weight: 900;
-  line-height: 0.98;
+  line-height: 1.02;
 }
 
 .hero-copy p {
   width: min(690px, 100%);
-  margin: 24px auto 0;
+  margin: 14px auto 0;
   color: #62666f;
-  font-size: 1.22rem;
+  font-size: 1.08rem;
   line-height: 1.55;
 }
 
@@ -181,7 +181,7 @@ a {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   width: min(690px, 100%);
-  margin: 34px auto 16px;
+  margin: 22px auto 14px;
   padding: 8px;
   border: 1px solid #d9dce2;
   border-radius: 12px;
@@ -259,7 +259,7 @@ a {
 .status-line,
 .error-line {
   min-height: 22px;
-  margin: 10px 0 22px;
+  margin: 8px 0 14px;
   color: #737985;
   font-size: 0.9rem;
   font-weight: 720;
@@ -274,7 +274,7 @@ a {
   grid-template-columns: 180px minmax(0, 1fr);
   overflow: hidden;
   width: min(980px, 100%);
-  margin: 26px auto 0;
+  margin: 16px auto 0;
   border: 1px solid #dce0e6;
   border-radius: 14px;
   background: #ffffff;
@@ -771,7 +771,7 @@ a {
 .final-cta h2 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2rem, 3.4vw, 3rem);
+  font-size: 2.6rem;
   font-weight: 900;
   line-height: 1.04;
 }
@@ -1090,7 +1090,7 @@ a {
 }
 
 .final-cta h2 {
-  font-size: clamp(1.8rem, 3.4vw, 2.65rem);
+  font-size: 2.35rem;
 }
 
 .final-cta p {
@@ -1199,15 +1199,20 @@ a {
   }
 
   .hero {
-    padding-top: 32px;
+    padding-top: 22px;
   }
 
   .hero h1 {
-    font-size: 3.1rem;
+    font-size: 2.55rem;
   }
 
   .hero-copy p {
-    font-size: 1.02rem;
+    font-size: 0.98rem;
+  }
+
+  .section h2,
+  .final-cta h2 {
+    font-size: 2rem;
   }
 
   .generator-bar,
@@ -1294,7 +1299,7 @@ a {
 
 @media (max-width: 440px) {
   .hero h1 {
-    font-size: 2.5rem;
+    font-size: 2.18rem;
   }
 
   .brand {

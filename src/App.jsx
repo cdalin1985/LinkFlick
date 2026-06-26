@@ -632,7 +632,7 @@ function FinalCTA({ productUrl, setProductUrl, isGenerating, handleGenerate }) {
 function Footer() {
   return (
     <footer className="site-footer">
-      <span>© 2026 LinkFlick. All rights reserved.</span>
+      <span>Copyright 2026 LinkFlick. All rights reserved.</span>
       <div>
         <a href="#top">Terms</a>
         <a href="#top">Privacy</a>
