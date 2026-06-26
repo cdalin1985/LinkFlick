@@ -51,7 +51,7 @@
 - `npm test`: 2 test files passed, 8 tests passed.
 - `npm run lint`: completed with no ESLint errors.
 - `npm run build`: Vite production build completed successfully.
-- GitHub `main`: pushed through commit `9c7567b` before final plan update.
-- Vercel production: `https://linkflick.vercel.app` ready on deployment `dpl_D2gBuVvPTzYX7WVKNekKwYGBHtVc`.
+- GitHub `main`: deployment-readiness changes and this plan update were pushed.
+- Vercel production: `https://linkflick.vercel.app` inspected as ready with all API functions present.
 - Live generation route: `POST /api/generate-brief` returned OpenAI-generated product assets from a pasted product URL.
 - Live video route: `POST /api/videos` validation returned `400` with `{"error":"A video prompt is required."}` without creating a billable video job.
