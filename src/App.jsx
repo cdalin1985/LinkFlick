@@ -199,6 +199,8 @@ export default function App() {
 
           {error ? <p className="error-line">{error}</p> : <p className="status-line">{generationNote}</p>}
 
+          <HeroSignalDeck />
+
           <GeneratorPreview
             brief={brief}
             activeTab={activeTab}
@@ -226,6 +228,18 @@ export default function App() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function HeroSignalDeck() {
+  return (
+    <div className="signal-deck" aria-label="LinkFlick generation status">
+      <span>URL intake</span>
+      <i aria-hidden="true" />
+      <span>Hook lab</span>
+      <i aria-hidden="true" />
+      <span>Short queue</span>
     </div>
   );
 }
