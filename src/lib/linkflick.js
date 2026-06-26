@@ -62,6 +62,37 @@ export function inferProductNameFromUrl(productUrl) {
   return titleize(bestPart.replace(/[_+.-]+/g, " "));
 }
 
+export function extractProductMetadataFromHtml(html, productUrl) {
+  const normalizedUrl = normalizeAffiliateUrl(productUrl);
+  const text = String(html || "");
+  const jsonLdProducts = extractJsonLdProducts(text);
+  const product = jsonLdProducts[0] || {};
+  const offers = Array.isArray(product.offers) ? product.offers[0] || {} : product.offers || {};
+  const brand = typeof product.brand === "string" ? product.brand : product.brand?.name;
+  const title =
+    cleanProductTitle(stringValue(product.name) || metaContent(text, "og:title") || metaContent(text, "twitter:title")) ||
+    inferProductNameFromUrl(normalizedUrl);
+
+  return compactObject({
+    title,
+    description:
+      stringValue(product.description) ||
+      metaContent(text, "og:description") ||
+      metaContent(text, "twitter:description"),
+    image: absoluteUrl(
+      stringValue(product.image) ||
+        (Array.isArray(product.image) ? product.image[0] : "") ||
+        metaContent(text, "og:image") ||
+        metaContent(text, "twitter:image"),
+      normalizedUrl
+    ),
+    brand: stringValue(brand),
+    price: stringValue(offers.price || offers.lowPrice),
+    currency: stringValue(offers.priceCurrency),
+    sourceUrl: normalizedUrl
+  });
+}
+
 export function buildVideoPrompt({ productName, angle, tone, hook }) {
   const safeProduct = productName || "the affiliate product";
   const selectedAngle = angle || "Problem-solution";
@@ -78,9 +109,14 @@ export function buildVideoPrompt({ productName, angle, tone, hook }) {
   ].join(" ");
 }
 
-export function buildFallbackBrief({ productUrl, angle = "Problem-solution", tone = "Punchy" }) {
+export function buildFallbackBrief({
+  productUrl,
+  angle = "Problem-solution",
+  tone = "Punchy",
+  productContext = {}
+}) {
   const normalizedUrl = normalizeAffiliateUrl(productUrl);
-  const productName = inferProductNameFromUrl(normalizedUrl);
+  const productName = cleanProductTitle(productContext.title) || inferProductNameFromUrl(normalizedUrl);
   const productLower = productName.toLowerCase();
 
   const hooks = [
@@ -149,6 +185,15 @@ export function buildFallbackBrief({ productUrl, angle = "Problem-solution", ton
     source: "demo",
     productUrl: normalizedUrl,
     productName,
+    productContext: compactObject({
+      title: productName,
+      description: productContext.description,
+      image: productContext.image,
+      brand: productContext.brand,
+      price: productContext.price,
+      currency: productContext.currency,
+      sourceUrl: productContext.sourceUrl || normalizedUrl
+    }),
     audience: "Affiliate shoppers",
     angle,
     tone,
@@ -163,6 +208,116 @@ export function buildFallbackBrief({ productUrl, angle = "Problem-solution", ton
       hook: hooks[0]
     })
   };
+}
+
+function absoluteUrl(value, baseUrl) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return value;
+  }
+}
+
+function cleanProductTitle(value) {
+  const title = stringValue(value);
+
+  if (!title) {
+    return "";
+  }
+
+  return title
+    .replace(/\s+[|–—-]\s+(?:buy\s+)?(?:official\s+)?(?:store|shop|amazon|walmart|target|example shop).*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactObject(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined && item !== null && String(item).trim() !== "")
+  );
+}
+
+function extractJsonLdProducts(html) {
+  const products = [];
+  const scriptPattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match = scriptPattern.exec(html);
+
+  while (match) {
+    try {
+      const parsed = JSON.parse(decodeHtmlEntities(match[1].trim()));
+      products.push(...findProductNodes(parsed));
+    } catch {
+      // Ignore malformed third-party JSON-LD and keep parsing other metadata.
+    }
+    match = scriptPattern.exec(html);
+  }
+
+  return products;
+}
+
+function findProductNodes(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => findProductNodes(item));
+  }
+
+  if (typeof value !== "object") {
+    return [];
+  }
+
+  const type = value["@type"];
+  const isProduct = Array.isArray(type)
+    ? type.some((item) => String(item).toLowerCase() === "product")
+    : String(type || "").toLowerCase() === "product";
+
+  if (isProduct) {
+    return [value];
+  }
+
+  return findProductNodes(value["@graph"]);
+}
+
+function metaContent(html, key) {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    new RegExp(`<meta[^>]+(?:property|name)=["']${escapedKey}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i"),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${escapedKey}["'][^>]*>`, "i")
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) {
+      return decodeHtmlEntities(match[1]).trim();
+    }
+  }
+
+  return "";
+}
+
+function decodeHtmlEntities(value) {
+  return String(value || "")
+    .replace(/&quot;/g, '"')
+    .replace(/&#34;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function stringValue(value) {
+  if (Array.isArray(value)) {
+    return stringValue(value[0]);
+  }
+
+  return value === undefined || value === null ? "" : String(value).trim();
 }
 
 function titleize(value) {

@@ -4,7 +4,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
   {
-    ignores: ["dist", "node_modules"]
+    ignores: [".vercel", "dist", "node_modules"]
   },
   js.configs.recommended,
   {
@@ -13,6 +13,7 @@ export default [
       ecmaVersion: 2024,
       sourceType: "module",
       globals: {
+        AbortController: "readonly",
         Buffer: "readonly",
         console: "readonly",
         document: "readonly",
@@ -23,6 +24,7 @@ export default [
         process: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
+        clearTimeout: "readonly",
         setTimeout: "readonly",
         URL: "readonly",
         window: "readonly"
