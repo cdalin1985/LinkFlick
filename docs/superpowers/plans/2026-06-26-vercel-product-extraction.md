@@ -42,7 +42,16 @@
 - Modify: `.gitignore`
 - Commit and push all deployment-readiness changes.
 
-- [ ] **Step 1: Verify `npm test`, `npm run lint`, and `npm run build`**
-- [ ] **Step 2: Commit and push changes to `main`**
-- [ ] **Step 3: Deploy production on Vercel**
-- [ ] **Step 4: Verify live app, live generation route, and video setup/job behavior**
+- [x] **Step 1: Verify `npm test`, `npm run lint`, and `npm run build`**
+- [x] **Step 2: Commit and push changes to `main`**
+- [x] **Step 3: Deploy production on Vercel**
+- [x] **Step 4: Verify live app, live generation route, and video setup/job behavior**
+
+**Completion evidence, June 26, 2026:**
+- `npm test`: 2 test files passed, 8 tests passed.
+- `npm run lint`: completed with no ESLint errors.
+- `npm run build`: Vite production build completed successfully.
+- GitHub `main`: pushed through commit `9c7567b` before final plan update.
+- Vercel production: `https://linkflick.vercel.app` ready on deployment `dpl_D2gBuVvPTzYX7WVKNekKwYGBHtVc`.
+- Live generation route: `POST /api/generate-brief` returned OpenAI-generated product assets from a pasted product URL.
+- Live video route: `POST /api/videos` validation returned `400` with `{"error":"A video prompt is required."}` without creating a billable video job.
