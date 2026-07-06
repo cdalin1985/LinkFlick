@@ -2520,3 +2520,27 @@ body {
     grid-column: 1 / -1;
   }
 }
+
+/* Keep interactive targets comfortably usable after the creator-garage theme overrides. */
+.site-header .brand,
+.site-header nav a,
+.product-identity a,
+.site-footer a,
+.concept-card button,
+.concept-section button,
+.concept-video > button {
+  min-height: 44px;
+}
+
+.site-header .brand,
+.site-header nav a,
+.product-identity a,
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.concept-card button,
+.concept-section button {
+  padding: 10px 12px;
+}
