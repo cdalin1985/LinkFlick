@@ -21,7 +21,7 @@ export const steps = [
   },
   {
     title: "AI Writes the Pitch",
-    body: "Generate hooks, scripts, captions, hashtags, and a compliant short-form concept in one pass.",
+    body: "Generate three contrasting concepts with hooks, scripts, captions, hashtags, and compliant video prompts in one pass.",
     Icon: Sparkles
   },
   {

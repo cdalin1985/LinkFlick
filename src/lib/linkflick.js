@@ -16,15 +16,13 @@ const genericPathParts = new Set([
 
 const stopWords = new Set(["and", "for", "in", "of", "the", "to", "with"]);
 
-export const defaultAngles = [
-  "Problem-solution",
-  "Before-after",
-  "Gift-worthy",
-  "Creator review",
-  "Deal urgency"
-];
-
 export const defaultTones = ["Punchy", "Trustworthy", "Playful", "Premium"];
+
+const fallbackDirections = [
+  { id: "problem-solution", angle: "Problem → Solution" },
+  { id: "honest-review", angle: "Honest Review" },
+  { id: "lifestyle-payoff", angle: "Lifestyle Payoff" }
+];
 
 export function normalizeAffiliateUrl(value) {
   const trimmed = String(value || "").trim();
@@ -69,6 +67,10 @@ export function extractProductMetadataFromHtml(html, productUrl) {
   const product = jsonLdProducts[0] || {};
   const offers = Array.isArray(product.offers) ? product.offers[0] || {} : product.offers || {};
   const brand = typeof product.brand === "string" ? product.brand : product.brand?.name;
+  const price =
+    stringValue(offers.price || offers.lowPrice) ||
+    metaContent(text, "product:price:amount") ||
+    metaContent(text, "og:price:amount");
   const title =
     cleanProductTitle(stringValue(product.name) || metaContent(text, "og:title") || metaContent(text, "twitter:title")) ||
     inferProductNameFromUrl(normalizedUrl);
@@ -87,8 +89,12 @@ export function extractProductMetadataFromHtml(html, productUrl) {
       normalizedUrl
     ),
     brand: stringValue(brand),
-    price: stringValue(offers.price || offers.lowPrice),
-    currency: stringValue(offers.priceCurrency),
+    price,
+    currency:
+      stringValue(offers.priceCurrency) ||
+      metaContent(text, "product:price:currency") ||
+      metaContent(text, "og:price:currency"),
+    bullets: extractProductBullets(product, text),
     sourceUrl: normalizedUrl
   });
 }
@@ -111,75 +117,80 @@ export function buildVideoPrompt({ productName, angle, tone, hook }) {
 
 export function buildFallbackBrief({
   productUrl,
-  angle = "Problem-solution",
   tone = "Punchy",
   productContext = {}
 }) {
   const normalizedUrl = normalizeAffiliateUrl(productUrl);
   const productName = cleanProductTitle(productContext.title) || inferProductNameFromUrl(normalizedUrl);
   const productLower = productName.toLowerCase();
-
-  const hooks = [
-    `This ${productLower} fixed the tiny problem I kept ignoring.`,
-    `I did not expect this ${productLower} to be this useful.`,
-    `Three reasons this ${productLower} belongs in your cart.`,
-    `If your setup still feels annoying, look at this.`,
-    `This is the kind of affiliate find people actually save.`
-  ];
-
-  const scripts = [
+  const contextBullets = normalizeBullets(productContext.bullets || []);
+  const primaryDetail = contextBullets[0] || productContext.description || "one practical benefit";
+  const secondaryDetail = contextBullets[1] || "a setup that stays simple in real life";
+  const baseHashtags = ["#AffiliateFinds", "#ProductReview", "#ShoppingFinds", "#LinkInBio"];
+  const concepts = [
     {
-      title: "Problem to payoff",
-      duration: "35s",
-      lines: [
-        `Open on the daily frustration your audience already recognizes.`,
-        `Introduce ${productName} as the simple upgrade, not a miracle fix.`,
-        "Show the product in use with one specific benefit per shot.",
-        "Close with a direct, low-pressure call to check the link."
-      ],
-      shotList: ["Frustration close-up", "Product reveal", "Use-case demo", "Benefit detail", "CTA end frame"],
-      cta: "Tap the link and compare it for yourself."
+      ...fallbackDirections[0],
+      hook: `This ${productLower} fixed the tiny problem I kept ignoring.`,
+      script: {
+        title: "From friction to payoff",
+        duration: "35s",
+        lines: [
+          "Open on the daily frustration your audience already recognizes.",
+          `Introduce ${productName} as the simple upgrade, not a miracle fix.`,
+          `Show the product in use and call out: ${primaryDetail}.`,
+          "Close with a direct, low-pressure call to check the link."
+        ],
+        shotList: ["Frustration close-up", "Product reveal", "Use-case demo", "Benefit detail", "CTA end frame"],
+        cta: "Tap the link and compare it for yourself."
+      },
+      caption: `${productName} is the small upgrade that removes one annoying bit of friction from the routine.`,
+      hashtags: [...baseHashtags, "#ProblemSolved", "#UsefulFinds"]
     },
     {
-      title: "Creator review",
-      duration: "42s",
-      lines: [
-        `Start with: "${hooks[1]}"`,
-        `Give one reason ${productName} earned a place in your routine.`,
-        "Mention the biggest practical feature in plain language.",
-        "End with who should buy it and who can skip it."
-      ],
-      shotList: ["Hook frame", "Unboxing angle", "Hands-on use", "Pros and caveat", "Affiliate disclosure frame"],
-      cta: "I linked the exact one I tested."
+      ...fallbackDirections[1],
+      hook: `I did not expect this ${productLower} to earn a spot in my routine.`,
+      script: {
+        title: "The honest verdict",
+        duration: "42s",
+        lines: [
+          `Start with the surprise: ${productName} was more useful than expected.`,
+          `Demonstrate ${primaryDetail} without exaggerating the result.`,
+          `Name the practical upside: ${secondaryDetail}.`,
+          "End with who should buy it, plus one believable reason someone might skip it."
+        ],
+        shotList: ["Hook frame", "Hands-on use", "Feature close-up", "Pros and caveat", "Affiliate disclosure frame"],
+        cta: "I linked the exact option so you can judge it for yourself."
+      },
+      caption: `No fake hype—just the practical reason ${productName} stayed in the rotation.`,
+      hashtags: [...baseHashtags, "#HonestReview", "#CreatorTested"]
     },
     {
-      title: "Giftable find",
-      duration: "30s",
-      lines: [
-        `Position ${productName} as an easy gift for a specific person.`,
-        "Show the product looking premium and practical.",
-        "Add one social-proof line without inventing fake numbers.",
-        "Finish with a save/share prompt."
-      ],
-      shotList: ["Gift setup", "Product beauty shot", "Feature close-up", "Lifestyle use", "Save/share frame"],
-      cta: "Save this before your next gift panic."
+      ...fallbackDirections[2],
+      hook: `The easiest way to make your routine feel a little more put together.`,
+      script: {
+        title: "The routine upgrade",
+        duration: "32s",
+        lines: [
+          "Open with the calmer, easier version of the moment your audience wants.",
+          `Make ${productName} part of the routine instead of presenting it as the whole story.`,
+          `Use a satisfying detail shot to reinforce ${primaryDetail}.`,
+          "Finish on the emotional payoff and invite viewers to picture it in their own setup."
+        ],
+        shotList: ["Lifestyle opener", "Product-in-context reveal", "Satisfying detail", "Routine payoff", "Soft CTA frame"],
+        cta: "The exact product is linked if this fits your routine too."
+      },
+      caption: `${productName} turns an ordinary routine into one of those oddly satisfying little wins.`,
+      hashtags: [...baseHashtags, "#RoutineUpgrade", "#LifestyleFinds"]
     }
-  ];
-
-  const captions = [
-    `${productName} is the kind of small upgrade that makes the whole routine feel easier. Linked for anyone comparing options.`,
-    `Affiliate find: ${productName}. Simple problem, clean solution, and a pitch that does not need fake hype.`,
-    `Would you use this? I would test ${productName} for the convenience angle alone.`
-  ];
-
-  const hashtags = [
-    "#AffiliateFinds",
-    "#TikTokMadeMeBuyIt",
-    "#ProductReview",
-    "#CreatorTools",
-    "#ShoppingFinds",
-    "#LinkInBio"
-  ];
+  ].map((concept) => ({
+    ...concept,
+    videoPrompt: buildVideoPrompt({
+      productName,
+      angle: concept.angle,
+      tone,
+      hook: concept.hook
+    })
+  }));
 
   return {
     source: "demo",
@@ -192,22 +203,93 @@ export function buildFallbackBrief({
       brand: productContext.brand,
       price: productContext.price,
       currency: productContext.currency,
+      bullets: contextBullets,
       sourceUrl: productContext.sourceUrl || normalizedUrl
     }),
     audience: "Affiliate shoppers",
-    angle,
     tone,
-    hooks,
-    scripts,
-    captions,
-    hashtags,
-    videoPrompt: buildVideoPrompt({
-      productName,
-      angle,
-      tone,
-      hook: hooks[0]
-    })
+    concepts
   };
+}
+
+export function normalizeGeneratedBrief(brief = {}) {
+  const suppliedConcepts = Array.isArray(brief.concepts) ? brief.concepts.slice(0, 3) : [];
+  const legacyHooks = Array.isArray(brief.hooks) ? brief.hooks : [];
+  const legacyScripts = Array.isArray(brief.scripts) ? brief.scripts : [];
+  const legacyCaptions = Array.isArray(brief.captions) ? brief.captions : [];
+  const legacyHashtags = Array.isArray(brief.hashtags) ? brief.hashtags : [];
+
+  const concepts = fallbackDirections.map((direction, index) => {
+    const supplied = suppliedConcepts[index] || {};
+    const hook =
+      stringValue(supplied.hook) ||
+      stringValue(legacyHooks[index]) ||
+      stringValue(legacyHooks[0]) ||
+      `A practical reason to look closer at ${brief.productName || "this product"}.`;
+    const script = supplied.script || legacyScripts[index] || legacyScripts[0] || {
+      title: direction.angle,
+      duration: "35s",
+      lines: ["Show the familiar problem.", "Demonstrate the product clearly.", "Close with a direct call to action."],
+      shotList: ["Problem", "Reveal", "Demo", "CTA"],
+      cta: "Check the link for details."
+    };
+
+    return {
+      id: stringValue(supplied.id) || direction.id,
+      angle: stringValue(supplied.angle) || direction.angle,
+      hook,
+      script,
+      caption:
+        stringValue(supplied.caption) ||
+        stringValue(legacyCaptions[index]) ||
+        stringValue(legacyCaptions[0]),
+      hashtags:
+        Array.isArray(supplied.hashtags) && supplied.hashtags.length
+          ? supplied.hashtags
+          : legacyHashtags,
+      videoPrompt:
+        stringValue(supplied.videoPrompt) ||
+        stringValue(brief.videoPrompt) ||
+        buildVideoPrompt({
+          productName: brief.productName,
+          angle: stringValue(supplied.angle) || direction.angle,
+          tone: brief.tone,
+          hook
+        })
+    };
+  });
+
+  return {
+    ...brief,
+    concepts
+  };
+}
+
+export function formatConceptForClipboard(concept = {}) {
+  const script = concept.script || {};
+
+  return [
+    String(concept.angle || "Concept").toUpperCase(),
+    "",
+    "HOOK",
+    concept.hook || "",
+    "",
+    `SCRIPT — ${script.title || "Affiliate short"}${script.duration ? ` (${script.duration})` : ""}`,
+    ...(Array.isArray(script.lines) ? script.lines : []),
+    script.cta ? `CTA: ${script.cta}` : "",
+    "",
+    "CAPTION",
+    concept.caption || "",
+    "",
+    "HASHTAGS",
+    Array.isArray(concept.hashtags) ? concept.hashtags.join(" ") : "",
+    "",
+    "VIDEO PROMPT",
+    concept.videoPrompt || ""
+  ]
+    .filter((line, index, lines) => line !== "" || lines[index - 1] !== "")
+    .join("\n")
+    .trim();
 }
 
 function absoluteUrl(value, baseUrl) {
@@ -220,6 +302,102 @@ function absoluteUrl(value, baseUrl) {
   } catch {
     return value;
   }
+}
+
+function extractProductBullets(product, html) {
+  return normalizeBullets([
+    ...structuredBullets(product.featureList),
+    ...structuredBullets(product.features),
+    ...structuredBullets(product.additionalProperty),
+    ...structuredBullets(product.positiveNotes),
+    ...htmlListBullets(html)
+  ]).slice(0, 6);
+}
+
+function structuredBullets(value) {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => structuredBullets(item));
+  }
+
+  if (typeof value === "object") {
+    if (value.itemListElement) {
+      return structuredBullets(value.itemListElement);
+    }
+
+    return structuredBullets(value.value || value.text || value.description || value.name || value.item?.name);
+  }
+
+  return splitBulletText(value);
+}
+
+function htmlListBullets(html) {
+  const snippets = [];
+  const containerPattern =
+    /<(?:section|div|ul|ol)[^>]*(?:class|id)=["'][^"']*(?:feature|highlight|bullet|benefit|spec|detail|description|product)[^"']*["'][^>]*>([\s\S]*?)<\/(?:section|div|ul|ol)>/gi;
+  let container = containerPattern.exec(html);
+
+  while (container) {
+    snippets.push(container[1]);
+    container = containerPattern.exec(html);
+  }
+
+  return snippets.flatMap((snippet) => {
+    const bullets = [];
+    const itemPattern = /<li[^>]*>([\s\S]*?)<\/li>/gi;
+    let item = itemPattern.exec(snippet);
+
+    while (item) {
+      bullets.push(item[1]);
+      item = itemPattern.exec(snippet);
+    }
+
+    return bullets;
+  });
+}
+
+function normalizeBullets(values) {
+  const seen = new Set();
+  const bullets = [];
+
+  for (const value of values) {
+    const bullet = cleanBullet(value);
+    const key = bullet.toLowerCase();
+
+    if (bullet && !seen.has(key)) {
+      seen.add(key);
+      bullets.push(bullet);
+    }
+  }
+
+  return bullets;
+}
+
+function splitBulletText(value) {
+  return String(value || "")
+    .split(/\n|[\u2022]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function cleanBullet(value) {
+  const bullet = decodeHtmlEntities(String(value || "").replace(/<[^>]+>/g, " "))
+    .replace(/^[\s\-*\u2022]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (bullet.length < 8 || bullet.length > 180) {
+    return "";
+  }
+
+  if (/^(add to cart|buy now|checkout|privacy|terms|home|shop)$/i.test(bullet)) {
+    return "";
+  }
+
+  return bullet;
 }
 
 function cleanProductTitle(value) {

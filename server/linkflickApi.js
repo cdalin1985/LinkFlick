@@ -9,31 +9,32 @@ import {
 
 const BriefRequestSchema = z.object({
   productUrl: z.string().min(1),
-  angle: z.string().default("Problem-solution"),
   tone: z.string().default("Punchy")
+});
+
+const ScriptSchema = z.object({
+  title: z.string(),
+  duration: z.string(),
+  lines: z.array(z.string()).min(3).max(6),
+  shotList: z.array(z.string()).min(4).max(7),
+  cta: z.string()
+});
+
+const ConceptSchema = z.object({
+  id: z.string(),
+  angle: z.string(),
+  hook: z.string(),
+  script: ScriptSchema,
+  caption: z.string(),
+  hashtags: z.array(z.string()).min(4).max(10),
+  videoPrompt: z.string()
 });
 
 const GeneratedBriefSchema = z.object({
   productName: z.string(),
   audience: z.string(),
-  angle: z.string(),
   tone: z.string(),
-  hooks: z.array(z.string()).min(5).max(8),
-  scripts: z
-    .array(
-      z.object({
-        title: z.string(),
-        duration: z.string(),
-        lines: z.array(z.string()).min(3).max(6),
-        shotList: z.array(z.string()).min(4).max(7),
-        cta: z.string()
-      })
-    )
-    .min(3)
-    .max(4),
-  captions: z.array(z.string()).min(3).max(5),
-  hashtags: z.array(z.string()).min(6).max(12),
-  videoPrompt: z.string()
+  concepts: z.array(ConceptSchema).length(3)
 });
 
 export async function handleGenerateBrief(payload) {
@@ -72,15 +73,11 @@ export async function handleGenerateBrief(payload) {
         },
         {
           role: "user",
-          content: [
-            `Affiliate product URL: ${normalizedUrl}`,
-            `Selling angle: ${parsed.data.angle}`,
-            `Tone: ${parsed.data.tone}`,
-            productContextPrompt(productContext),
-            "Return hooks, 30-45 second scripts, captions, hashtags, and one Sora-ready 9:16 video prompt."
-          ]
-            .filter(Boolean)
-            .join("\n")
+          content: buildGenerationPrompt({
+            normalizedUrl,
+            tone: parsed.data.tone,
+            productContext
+          })
         }
       ],
       text: {
@@ -99,6 +96,20 @@ export async function handleGenerateBrief(payload) {
       error: error.message || "Unable to generate LinkFlick assets."
     });
   }
+}
+
+export function buildGenerationPrompt({ normalizedUrl, tone, productContext = {} }) {
+  return [
+    `Affiliate product URL: ${normalizedUrl}`,
+    `Tone: ${tone}`,
+    buildProductContextPrompt(productContext),
+    "Return exactly three complete concepts with meaningfully different selling strategies.",
+    "Each concept needs an angle label, hook, 30-45 second script, caption, hashtags, and a Sora-ready 9:16 video prompt.",
+    "Use stable, lowercase kebab-case IDs. Do not return three rewrites of the same mechanism.",
+    "Prefer a varied set such as problem-to-solution, honest review or proof, and lifestyle or identity payoff when those fit the product."
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function handleCreateVideo(payload) {
@@ -211,12 +222,17 @@ async function fetchProductContext(productUrl) {
   }
 }
 
-function productContextPrompt(productContext) {
+export function buildProductContextPrompt(productContext = {}) {
+  const bullets = Array.isArray(productContext.bullets)
+    ? productContext.bullets.filter(Boolean).slice(0, 6)
+    : [];
   const lines = [
     productContext.title ? `Product title: ${productContext.title}` : "",
     productContext.description ? `Product description: ${productContext.description}` : "",
     productContext.brand ? `Brand: ${productContext.brand}` : "",
-    productContext.price ? `Price: ${productContext.currency || ""} ${productContext.price}`.trim() : ""
+    productContext.price ? `Price: ${productContext.currency || ""} ${productContext.price}`.trim() : "",
+    productContext.image ? `Product image: ${productContext.image}` : "",
+    bullets.length ? `Key bullets:\n${bullets.map((bullet) => `- ${bullet}`).join("\n")}` : ""
   ].filter(Boolean);
 
   return lines.length ? `Extracted product context:\n${lines.join("\n")}` : "";

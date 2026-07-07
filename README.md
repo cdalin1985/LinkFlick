@@ -1,6 +1,6 @@
 # LinkFlick
 
-LinkFlick is a Ssemble-inspired affiliate marketing short generator. Paste any affiliate product URL and the app generates hooks, scripts, captions, hashtags, and an OpenAI video-generation prompt.
+LinkFlick is a Ssemble-inspired affiliate marketing short generator. Paste any affiliate product URL and the app generates three distinct selling concepts, each with its own hook, script, caption, hashtags, and OpenAI video-generation prompt.
 
 ## Run Locally
 
